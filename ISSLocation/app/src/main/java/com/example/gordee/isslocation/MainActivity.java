@@ -1,7 +1,10 @@
 package com.example.gordee.isslocation;
 
+import android.app.ActionBar;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.drm.DrmStore;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.AsyncTask;
@@ -16,6 +19,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.net.*;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import java.io.*;
@@ -28,18 +33,13 @@ import java.net.URLConnection;
 import org.json.*;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
-    String retString = "";
-    boolean change = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
         Button showLoc = (Button)findViewById(R.id.show_button);
 
         showLoc.setOnClickListener(new View.OnClickListener(){
