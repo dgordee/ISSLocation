@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -31,6 +33,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private String newString;
     private Double lat = 0.0, lon = 0.0;
     int count = 0;
+    boolean centered = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +62,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         public void run() {
             update();
-            h2.postDelayed(updateMap, 5000);
+            h2.postDelayed(updateMap, 10000);
         }
     };
 
@@ -169,10 +172,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             newString = result;
             lat = Double.parseDouble(newString.substring(0, newString.indexOf(" ")));
             lon = Double.parseDouble(newString.substring(newString.indexOf(" ")+1, newString.length()));
+            SimpleDateFormat sdf = new SimpleDateFormat("YYYY/mm/dd, HH:mm:ss");
+            MarkerOptions marker =new MarkerOptions().position(new LatLng(lat, lon)).title("ISS Location at " + sdf.format(new Date()));
+            //mMap.clear();
+            mMap.addMarker(marker);
 
-            mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(new LatLng(lat, lon)).title("ISS Location"));
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat, lon)));
+            if(!centered) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat, lon)));
+                centered = true;
+            }
         }
     }
 
