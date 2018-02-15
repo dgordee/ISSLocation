@@ -10,7 +10,10 @@ import android.os.Bundle;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -31,9 +34,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private String newString;
-    private Double lat = 0.0, lon = 0.0;
+    private String[] info = {"", "", "", ""};
+    double lat, lon, alt, vel;
     int count = 0;
     boolean centered = false;
+
+    ListView attributes;
+
+    ISS iss;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,12 +51,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        //newString= (String) savedInstanceState.getSerializable("location");
-       // Intent in = getIntent();
+        attributes = (ListView)findViewById(R.id.item_list);
 
         AsyncTaskRunner runner = new AsyncTaskRunner();
         runner.execute();
         updateMap.run();
+    }
+
+    public void updateList(){
+        info[0] = "Latitude: " + iss.getX();
+        info[1] = "Longitude: " + iss.getY();
+        info[2] = "Altitude: " + iss.getAltitude();
+        info[3] = "Velocity: " + iss.getVelocity();
+        ArrayAdapter adapter = new ArrayAdapter(this,
+                android.R.layout.simple_list_item_1, info);
+        attributes.setAdapter(adapter);
     }
 
     public void update(){
@@ -89,13 +106,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    private class Point2D {
+    private class ISS {
         double x;
         double y;
+        double velocity;
+        double altitude;
+        String[] astronauts;
 
-        public Point2D(double x, double y){
+
+        public ISS(double x, double y, double velocity, double altitude, String[] astronauts){
             this.x = x;
             this.y = y;
+            this.velocity = velocity;
+            this.altitude = altitude;
+            this.astronauts = astronauts;
         }
 
         public double getX(){
@@ -105,40 +129,59 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public double getY() {
             return y;
         }
+
+        public String getVelocity(){return "" + velocity;}
+
+        public double getAltitude(){return altitude;}
+
+        public String[] getAstronauts() {
+            return astronauts;
+        }
+
+        public String toString(){
+            return getX() + ", " + getY() + ", " + getVelocity() + ", " + getAltitude();
+        }
     }
 
     private class AsyncTaskRunner extends AsyncTask<String, String, String> {
         private String resp;
         ProgressDialog progressDialog;
 
-        public String getLoc() throws IOException {
+        public ISS getLoc() throws IOException {
 
-            URL url = new URL("http://api.open-notify.org/iss-now.json");
+            URL url = new URL("https://api.wheretheiss.at/v1/satellites/25544");
             URLConnection yc = url.openConnection();
             //BufferedReader in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
             InputStream in = yc.getInputStream();
             JsonReader reader = new JsonReader(new InputStreamReader(yc.getInputStream(), "UTF-8"));
 
-            Point2D p = null;
+            lat = 0.;
+            lon = 0.;
+            alt = 0.;
+            vel = 0.;
+
             reader.beginObject();
             while(reader.hasNext()){
                 String loc = reader.nextName();
-                if(loc.equals("iss_position")){
-                    p = readPos(reader);
+                if(loc.equals("latitude")){
+                    lat = reader.nextDouble();
+                }else if (loc.equals("longitude")){
+                    lon = reader.nextDouble();
+                }else if (loc.equals("velocity")) {
+                    vel = reader.nextDouble();
+                }else if(loc.equals("altitude")){
+                    alt = reader.nextDouble();
                 }else{
                     reader.skipValue();
                 }
-
             }
             reader.endObject();
             in.close();
-            Location loc = new Location("ISS");
-
-            return p.x + " " + p.y;
+            return new ISS(lat, lon,vel, alt, null);
         }
 
-        protected Point2D readPos(JsonReader reader) throws IOException{
-            Log.e("yay", "supposed to be here");
+        /*
+        protected ISS readPos(JsonReader reader) throws IOException{
             double lat = 0, lon = 0;
             reader.beginObject();
             while (reader.hasNext()){
@@ -152,15 +195,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
             reader.endObject();
-            return new Point2D(lat, lon);
-        }
+            return new ISS(lat, lon);
+        }*/
+
 
         @Override
         protected String doInBackground(String... params){
 
             String out = "";
             try {
-                out = getLoc();
+                out = getLoc().toString();
+                iss = getLoc();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -169,13 +214,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(String result){
-            newString = result;
-            lat = Double.parseDouble(newString.substring(0, newString.indexOf(" ")));
-            lon = Double.parseDouble(newString.substring(newString.indexOf(" ")+1, newString.length()));
             SimpleDateFormat sdf = new SimpleDateFormat("YYYY/mm/dd, HH:mm:ss");
-            MarkerOptions marker =new MarkerOptions().position(new LatLng(lat, lon)).title("ISS Location at " + sdf.format(new Date()));
+            MarkerOptions marker =new MarkerOptions().position(new LatLng(iss.getX(),
+                    iss.getY())).title("ISS Location at " + sdf.format(new Date()));
             //mMap.clear();
             mMap.addMarker(marker);
+            updateList();
 
             if(!centered) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat, lon)));

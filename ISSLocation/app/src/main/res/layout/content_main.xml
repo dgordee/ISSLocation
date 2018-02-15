@@ -86,6 +86,19 @@
             android:padding="15dp"
             android:background="@drawable/login_button"
             />
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Sign up"
+            style="@style/Base.TextAppearance.AppCompat.Body1"
+            android:layout_marginTop="20dp"
+            android:clickable="true"
+            android:textColor="#fff"
+            android:textSize="16sp"
+            android:padding="15dp"
+            android:background="@drawable/signup_button"
+            />
 
     </LinearLayout>
     <Button
